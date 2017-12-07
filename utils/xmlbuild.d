@@ -14,6 +14,7 @@
 
 module ae.utils.xmlbuild;
 
+import ae.utils.xmllite : XmlNode, XmlNodeType;
 import ae.utils.xmlwriter;
 
 /// Create an XML node. Entry point.
@@ -58,6 +59,31 @@ final class XmlBuildNode
 		_xmlbuild_info.text = text;
 	}
 
+	XmlBuildNode append(XmlNode node)
+	{
+		import std.algorithm : map, each;
+		import std.range : array;
+
+		auto result = new XmlBuildNode();
+
+		if (node.type == XmlNodeType.Text)
+		{
+			result._xmlbuild_info.tag = null;
+			result._xmlbuild_info.text = node.tag;
+		}
+		else
+		{
+			result._xmlbuild_info.tag = node.tag;
+			foreach (key, value; node.attributes)
+				result._xmlbuild_info.attributes ~= StringPair(key, value);
+			node.children.each!(node => result.append(node));
+		}
+
+		this._xmlbuild_info.children ~= result;
+
+		return result;
+	}
+
 	override string toString() const
 	{
 		XmlWriter writer;
@@ -76,21 +102,29 @@ final class XmlBuildNode
 	{
 		with (_xmlbuild_info)
 		{
-			output.startTagWithAttributes(tag);
-			foreach (ref attribute; attributes)
-				output.addAttribute(attribute.key, attribute.value);
-			if (!children.length && !text)
+			if (tag)
 			{
-				output.endAttributesAndTag();
-				return;
+				output.startTagWithAttributes(tag);
+				foreach (ref attribute; attributes)
+					output.addAttribute(attribute.key, attribute.value);
+				if (!children.length && !text)
+				{
+					output.endAttributesAndTag();
+					return;
+				}
+				output.endAttributes();
+
+				foreach (child; children)
+					child.writeTo(output);
+				output.text(text);
+
+				output.endTag(tag);
 			}
-			output.endAttributes();
-
-			foreach (child; children)
-				child.writeTo(output);
-			output.text(text);
-
-			output.endTag(tag);
+			else
+			{
+				assert(!attributes && !children);
+				output.text(text);
+			}
 		}
 	}
 
