@@ -7,10 +7,10 @@ then
     exit
 fi
 
-rm ae.zip || true
+rm "$1".zip || true
 rm -rf "$1"|| true
-mkdir -p "$1"/src/ae
+mkdir -p "$1"
 cp .travis.yml appveyor.yml dub.json README.md "$1"
-cp -r utils "$1"/src/ae/
+cp -r utils "$1"
 zip -r "$1".zip "$1"
 rm -rf "$1"
